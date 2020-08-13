@@ -3,8 +3,9 @@ import torch.nn as nn
 import numpy as np
 import matplotlib.pyplot as plt
 import  sys
-sys.path.append("./src")
-from base_models import *
+#sys.path.append("./src")
+from models import *
+from kf import *
 
 class Kinematic_1d(BasePlantModel):
     def __init__(self):
@@ -28,8 +29,7 @@ class Kinematic_1d(BasePlantModel):
     def B_(self,state,control,dt):
         return self._B*dt
  
-
- class ObsPosition_1d(BaseObserverModel):
+class ObsPosition_1d(BaseObserverModel):
     def __init__(self,R=torch.FloatTensor([0.5])):
         super().__init__(R)
         self.dim_state = 2
@@ -61,9 +61,10 @@ p_model = Kinematic_1d()
 o_model = ObsPosition_1d()
 kfc = KalmanFilterCalculator(p_model,o_model)
 kf = KalamanFilter(kfc)
+dts = torch.ones(99)*0.5
 
 Ss_p,Ps_p,Ss_f,Ps_f = kf.filtering(s0,P0,dts,observations)
-Ss_s,Ps_s =  kf.smoothing(Ss_p=Ss_p,Ps_p=Ps_p,Ss_f=Ss_f,Ps_f=Ps_f)
+Ss_s,Ps_s =  kf.smoothing(Ss_p=Ss_p,Ps_p=Ps_p,Ss_f=Ss_f,Ps_f=Ps_f,dts=dts)
 
 plt.plot(Ss_f[1:21,0])
 plt.plot(Ss_s[1:21,0])
