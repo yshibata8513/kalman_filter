@@ -3,7 +3,7 @@ import torch.nn as nn
 import numpy as np
 
 class BaseRotationMatrix(nn.Module):
-    def __init__(self,theta,train=False):
+    def __init__(self,theta,train=True):
         super().__init__()
         if theta:
             self.theta = torch.Tensor([theta]).view(1)
@@ -26,7 +26,7 @@ class BaseRotationMatrix(nn.Module):
 
 
 class Rx(BaseRotationMatrix):
-    def __init__(self,theta=None,train=False):
+    def __init__(self,theta=None,train=True):
         super().__init__(theta,train)
         
     def construct_R(self,theta):
@@ -37,7 +37,7 @@ class Rx(BaseRotationMatrix):
                                [0 ,-s ,c]])
 
 class Ry(BaseRotationMatrix):
-    def __init__(self,theta=None,train=False):
+    def __init__(self,theta=None,train=True):
         super().__init__(theta,train)
         
         
@@ -50,7 +50,7 @@ class Ry(BaseRotationMatrix):
 
 
 class Rz(BaseRotationMatrix):
-    def __init__(self,theta=None,train=False):
+    def __init__(self,theta=None,train=True):
         super().__init__(theta,train)
         
         
@@ -63,11 +63,11 @@ class Rz(BaseRotationMatrix):
         
     
 class EulerRotationXYZ(nn.Module):
-    def __init__(self,yaw=None,roll=None,pitch=None,train=False):
+    def __init__(self,yaw=None,roll=None,pitch=None,train=True):
         super().__init__()
-        self._Rx = Rx(roll)
-        self._Ry = Ry(pitch)
-        self._Rz = Rz(yaw)
+        self._Rx = Rx(roll,train)
+        self._Ry = Ry(pitch,train)
+        self._Rz = Rz(yaw,train)
         
     def forward(self,x):
         return self._Rx(self._Ry(self._Rz(x)))
@@ -77,3 +77,17 @@ class EulerRotationXYZ(nn.Module):
         basis = self._Ry.coodinate_transform(basis)
         basis = self._Rz.coodinate_transform(basis)
         return basis
+
+    def construc_kinematic_matrix(self,yaw,roll,pitch):
+        c_p = torch.cos(pitch)
+        t_p = torch.tan(pitch)
+        s_r = torch.sin(roll)
+        c_r = torch.cos(roll)
+
+        return  torch.Tensor([[1 ,s_r*t_p ,c_r*t_p],
+                               [0 ,c_r  ,-s_r],
+                               [0. ,s_r/c_p ,c_r/c_p]])
+        
+    def kinematic_transform(self,gyro_s,yaw,roll,pitch):
+        M = self.construc_kinematic_matrix(yaw,roll,pitch)
+        return M@gyro_s
