@@ -53,4 +53,3 @@ class BaseObserverModel(nn.Module):
     @property
     def R(self):
         return self._R.data.clone()
-
